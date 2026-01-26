@@ -1,5 +1,4 @@
 import numpy as np
-from collections import defaultdict
 
 # Compute the base 3 thing of 0 1 2 to keep track of the feedback.
 def ComputeBase3(feedback: str):
@@ -32,7 +31,5 @@ def CompareWords(word1: str , word2: str):
   return feedback
 
 ## now make matrix for total and possible words and keep a pattern of them
-#def Compute_pattern_id()
-if __name__ == "__main__":
-  ans = CompareWords("level", "hello")
-  print(ans)
+def Compute_pattern_id(possible_words : list , answer_list : list ):
+  
