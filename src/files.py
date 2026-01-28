@@ -4,10 +4,10 @@ import numpy as np
 def load_word_list(file_path : str):
   with open(file_path , "r") as f:
     words = [ line.strip() for line in f]
-  
+
   mapped_words = {}
   for i in range(len(words)):
-    mapped_words.append({words[i] : i})
+    mapped_words[words[i]] = i
 
   return mapped_words
 

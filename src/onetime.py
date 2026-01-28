@@ -1,54 +1,106 @@
 import numpy as np
 import files as fs
-# Compute the base 3 thing of 0 1 2 to keep track of the feedback.
-def ComputeBase3(feedback: str):
+import time
 
-  temp = np.frombuffer(feedback.encode() , dtype=np.uint8) - ord('0')
-  mult = np.array([81 , 27 , 9 , 3 , 1])
+def get_pattern_matrix(guesses, answers):
+    """
+    Vectorized calculation of the pattern matrix.
+    Returns a (n_guesses, n_answers) uint8 matrix.
+    Values: 0=Gray, 1=Yellow, 2=Green (Base 3 encoded: 2*3^i)
+    """
+    # Convert strings to uint8 np array as ascii values
+    # This is like (X , 5) shape
+    guess_arr = np.array([list(w.encode()) for w in guesses], dtype=np.uint8)
+    answer_arr = np.array([list(w.encode()) for w in answers], dtype=np.uint8)
 
-  feedbackbase3 = np.dot(temp , mult)
+    n_guesses = len(guesses)
+    n_answers = len(answers)
 
-  return feedbackbase3
+    # Initialize matrix
 
-## Compare two word and classify them
-# 0 for gray , 1 for yellow and 2 fro green
+    matrix = np.zeros((n_guesses, n_answers), dtype=np.uint8)
 
-def CompareWords(word1: str , word2: str):
+    # guess_arr: (G, 1, 5)
+    # answer_arr: (1, A, 5)
+    G = guess_arr[:, None, :]
+    A = answer_arr[None, :, :]
 
-  feedback = "" # The feedback string calculation
-  mp = defaultdict(int)
-  for i in range(5):
-    mp[word1[i]] += 1
-  for i in range(5):
-    if word2[i] == word1[i]:
-      feedback += "2"
-      mp[word2[i]] -= 1
-    elif word2[i] in word1:
-      feedback += "1"
-      mp[word2[i]] -= 1
-    else :
-      feedback += "0"
-  return feedback
+    greens = (G == A)
+
+    pass
+
+from numba import jit, prange
+
+@jit(nopython=True, parallel=True)
+
+def populate_matrix_numba(guess_arr, answer_arr):
+    n_guesses = guess_arr.shape[0]
+    n_answers = answer_arr.shape[0]
+    matrix = np.zeros((n_guesses, n_answers), dtype=np.uint8)
+
+    multipliers = np.array([81, 27, 9, 3, 1], dtype=np.uint8)
+
+    for i in prange(n_guesses):
+        for j in range(n_answers):
+            g = guess_arr[i]
+            a = answer_arr[j]
+
+            temp_a = np.empty(5, dtype=np.uint8)
+            for k in range(5):
+                temp_a[k] = a[k]
+
+            code = 0
+            colors = np.zeros(5, dtype=np.uint8)
+
+            # GREEN PASS
+            for k in range(5):
+                if g[k] == temp_a[k]:
+                    colors[k] = 2
+                    temp_a[k] = 255 # Mark answer index as used
+
+            # YELLOW PASS
+            for k in range(5):
+                if colors[k] == 0: # Not green
+                    g_char = g[k]
+                    for m in range(5):
+                        if temp_a[m] == g_char:
+                            colors[k] = 1
+                            temp_a[m] = 255 # Mark used
+                            break
+            # Compute Base 3
+            val = 0
+            for k in range(5):
+                val += colors[k] * multipliers[k]
+
+            matrix[i][j] = val
+
+    return matrix
 
 def make_matrix():
+    print("Loading word lists...")
+    rows_dict = fs.load_word_list('allowed_words.txt')
+    cols_dict = fs.load_word_list('answer_words.txt')
 
-  rows = fs.load_word_list('allowed_words.txt')
-  columns = fs.load_word_list('answer_words.txt')
+    guesses = list(rows_dict.keys())
+    answers = list(cols_dict.keys())
 
-  matrix = np.zeros((len(rows) , len(columns)) , dtype = np.int16)
+    print("Converting to uint8 arrays...")
+    guess_arr = np.array([list(w.lower().encode()) for w in guesses], dtype=np.uint8)
+    answer_arr = np.array([list(w.lower().encode()) for w in answers], dtype=np.uint8)
 
+    print(f"Computing matrix {guess_arr.shape} x {answer_arr.shape}...")
+    start = time.time()
 
-## now make matrix for total and possible words and keep a pattern of them
-def populate_matrix(possible_words : dict, answer_list : dict , matrix : np.ndarray ):
+    # Numba compilation happens on first call, so it might take 1 second extra
+    matrix = populate_matrix_numba(guess_arr, answer_arr)
 
-  possible_keys = list(possible_words.keys())
-  answer_keys = list(answer_list.keys())
+    end = time.time()
+    print(f"Done in {end - start:.2f} seconds!")
 
-  for i, pw in enumerate(possible_keys):
-    for j, aw in enumerate(answer_keys):
-      matrix[i][j] = ComputeBase3(CompareWords(pw, aw))
+    np.save("matrix.npy", matrix)
 
-  np.save("matrix.npy" , matrix)
+if __name__ == "__main__":
+    make_matrix()
 
 
 
