@@ -17,7 +17,6 @@ def get_pattern_matrix(guesses, answers):
     n_answers = len(answers)
 
     # Initialize matrix
-
     matrix = np.zeros((n_guesses, n_answers), dtype=np.uint8)
 
     # guess_arr: (G, 1, 5)
