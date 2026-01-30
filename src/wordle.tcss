@@ -1,0 +1,67 @@
+Screen {
+    layout: horizontal;
+}
+
+/* LEFT SIDE: The Game Board */
+#game-container {
+    width: 60%;
+    height: 100%;
+    align: center middle;
+    border-right: solid $primary;
+}
+
+.row {
+    width: auto;
+    height: auto;
+    margin: 1 0;
+    layout: horizontal;
+}
+
+.cell {
+    width: 8;
+    height: 3;
+    content-align: center middle;
+    margin: 0 1;
+    border: solid $secondary;
+    text-style: bold;
+    background: $surface;
+}
+
+/* Color States for Cells */
+.cell.gray {
+    background: $error;
+    color: $text;
+}
+
+.cell.yellow {
+    background: $warning;
+    color: $text;
+}
+
+.cell.green {
+    background: $success;
+    color: $text;
+}
+
+/* RIGHT SIDE: The Assistant */
+#sidebar {
+    width: 40%;
+    height: 100%;
+    dock: right;
+    padding: 1;
+}
+
+#stats-panel {
+    height: 20%;
+    border: solid $accent;
+    margin-bottom: 1;
+}
+
+#suggestions-table {
+    height: 80%;
+    border: solid $accent;
+}
+
+Label {
+    padding: 1;
+}
